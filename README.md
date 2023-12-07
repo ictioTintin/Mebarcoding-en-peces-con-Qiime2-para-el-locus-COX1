@@ -1,4 +1,4 @@
-# Mebarcoding-en-peces-con-Qiime2-para-el-locus-COX1
+# Metabarcoding-en-peces-con-Qiime2-para-el-locus-COX1
 
 _Martin Holguin Osorio_\
 _junio de 2021_\
@@ -94,28 +94,12 @@ qiime feature-table tabulate-seqs \
 qiime tools view salidas/tabla.qzv
 ```
 
-## asignacion taxonomica 
-
-#etapa experimental; entre las lineas esta la zona de experimentos, se hizo de esta manera ya que se tenia que escoger la mejor ruta de asignacion para mejorar y corregir varios detalles de la version anterior del pipeline
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-#***********************************************************************************************************************
-### asignacion taxonomica con sklearn
-qiime feature-classifier classify-sklearn \
---i-classifier ../BdD/Locales/COI/classifier_SuppMaterial2_FISHF2.qza \
---i-reads salidas/secs_representativas.qza \
---p-confidence 0.90 \
---p-read-orientation same \
---o-classification salidas/taxonomy_SuppMaterial2.qza
-#Plugin error from feature-classifier:
-#
-#  pop from empty list
-#
-#Debug info has been saved to /tmp/qiime2-q2cli-err-65qmtwhk.log
+## Asignacion taxonomica 
 
 
+### Asignacion taxonomica con vsearch
 
-#***********************************************************************************************************************
-### asignacion taxonomica con vsearch
+```
 qiime feature-classifier classify-consensus-vsearch \
   --i-query salidas/secs_representativas.qza \
   --i-reference-reads ../BdD/Locales/COI/SuppMaterial2.qza \
@@ -139,28 +123,10 @@ qiime taxa barplot \
 --o-visualization salidas/vsearch_taxa_bar_plots.qzv
 #visualizo
 qiime tools view salidas/vsearch_taxa_bar_plots.qzv
+```
 
-
-
-#***********************************************************************************************************************
-### asignacion taxonomica hibrida con vsearch y sklearn
-qiime feature-classifier classify-hybrid-vsearch-sklearn \
-  --i-query salidas/secs_representativas4.qza \
-  --i-reference-reads ../BdD/Locales/COI/SuppMaterial2.qza \
-  --i-reference-taxonomy ../BdD/Locales/COI/taxo_SuppMaterial2.qza \
-  --i-classifier ../BdD/Locales/COI/classifier_SuppMaterial2.qza \
-  --o-classification salidas/0.97-hybrid-vsearch-sklearn-taxonomy_SuppMaterial2.qza
-#Plugin error from feature-classifier:
-#
-#  Command '['vsearch', '--fastx_subsample', '/tmp/qiime2-archive-w29c6cac/320ba9cd-ec4d-4aeb-a771-6050de6d7490/data/dna-sequences.fasta', '--sample_size', '1000', '--randseed', '0', '--fastaout', '/tmp/tmpljeec60b']' returned non-zero exit status 1.
-#
-#Debug info has been saved to /tmp/qiime2-q2cli-err-cbadm2i7.log
-
-
-
-
-#***********************************************************************************************************************
-### asignacion taxonomica con blast
+### Asignacion taxonomica con blast
+```
 qiime feature-classifier classify-consensus-blast \
 --i-query salidas/secs_representativas.qza \
 --i-reference-reads ../BdD/Locales/COI/SuppMaterial2.qza \
@@ -181,23 +147,21 @@ qiime taxa barplot \
 --o-visualization salidas/blast-taxa_bar_plots_SuppMaterial2.qzv
 #visualizo
 qiime tools view salidas/blast-taxa_bar_plots_SuppMaterial2.qzv
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-#Escojo vsearch al 90% ya que este marcador (COX1) no suele relajarse tanto en su porcentaje de identidad segun he visto en la literatura, sin embargo si se relaja al 70 muestra mayor numero de
-#spp y una mayor proporcion de eDNA asignada en cada muestra, PERO, detecta varias especies ajenas al area de estudio
-#Blast al 90% tambien da resultados similares, en cuanto a las asignaciones
+```
 
 
 
-#########################################################################################################################################################################################################################
-###################################################### Filogenia ambiental ###################################################
+### Filogenia ambiental 
 
-#hago filogenia con la base de datos
-#el comando phylogeny align-to-tree-mafft-fasttree hace todo el pipeline para generar la filogenia
-    #qiime alignment mafft ...
-    #qiime alignment mask ...
-    #qiime phylogeny fasttree ...
-    #qiime phylogeny midpoint-root ...
-#tecnicamente es un pipeline dentro de este pipeline (hace lo mismo en menos lineas, dentro de este pipeline)
+hago filogenia con la base de datos el comando phylogeny align-to-tree-mafft-fasttree hace todo el pipeline para generar la filogenia
+
+* qiime alignment mafft ...
+* qiime alignment mask ...
+* qiime phylogeny fasttree ...
+* qiime phylogeny midpoint-root ...
+
+Tecnicamente es un pipeline dentro de este pipeline (hace lo mismo en menos lineas, dentro de este pipeline)
+```
 qiime phylogeny align-to-tree-mafft-fasttree \
   --i-sequences salidas/secs_representativas.qza \
   --output-dir salidas/filogenia_ambiental
@@ -209,26 +173,26 @@ qiime empress community-plot \
     --m-sample-metadata-file metadata.tsv \
     --m-feature-metadata-file salidas/vsearch-taxonomy_SuppMaterial2.qza \
     --o-visualization salidas/empress-tree.qzv
-    
-    
-#######################################################################################################################################################################################################################################
-################################### filtracion #################################
-#como hay rasgos(ASVs) de otras cosas ajenas a peces filtro y dejo solo la informacion de peces
+```
 
+### Filtracion 
+Como hay rasgos(ASVs) de otras cosas ajenas a peces filtro y dejo solo la informacion de peces
+```
 #filtro la tabla 
 qiime taxa filter-table \
   --i-table salidas/tabla.qza \
   --i-taxonomy salidas/vsearch-taxonomy_SuppMaterial2.qza  \
   --p-include Actinopterygii \
   --o-filtered-table salidas/tabla_filtrada.qza
+
 #creo visualizador de la tabla
 qiime feature-table summarize \
 --i-table salidas/tabla_filtrada.qza \
 --o-visualization salidas/tabla_filtrada.qzv \
 --m-sample-metadata-file metadata.tsv
+
 #visualizo
 qiime tools view salidas/tabla_filtrada.qzv  
-
 
 #filtro las secuencias
 qiime taxa filter-seqs \
@@ -236,10 +200,12 @@ qiime taxa filter-seqs \
   --i-taxonomy salidas/vsearch-taxonomy_SuppMaterial2.qza  \
   --p-include Actinopterygii \
   --o-filtered-sequences salidas/secs_representativas_filtradas.qza \
-  
+```
 
 #**************************************************************************************************************************
-### vuelvo y hago asignacion taxonomica con vsearch para verificar que solo quedan secuencias de peces
+### Reasignacion taxonomica con vsearch para verificar que solo quedan secuencias de peces
+```
+#hago la reasignacion con vsearch para verificar que solo quedan secuencias de peces
 qiime feature-classifier classify-consensus-vsearch \
   --i-query salidas/secs_representativas_filtradas.qza \
   --i-reference-reads ../BdD/Locales/COI/SuppMaterial2.qza \
@@ -261,20 +227,15 @@ qiime taxa barplot \
 --i-taxonomy salidas/vsearch-taxonomy_SuppMaterial2_filtrada.qza \
 --m-metadata-file metadata.tsv \
 --o-visualization salidas/vsearch_taxa_bar_plots_filtrada.qzv
+
 #visualizo
 qiime tools view salidas/vsearch_taxa_bar_plots_filtrada.qzv
+```
 
 
-#******************************************************************************************
-### vuelvo y hago la Filogenia ambiental ###################################################
-
-#hago filogenia con la base de datos
-#el comando phylogeny align-to-tree-mafft-fasttree hace todo el pipeline para generar la filogenia
-    #qiime alignment mafft ...
-    #qiime alignment mask ...
-    #qiime phylogeny fasttree ...
-    #qiime phylogeny midpoint-root ...
-#tecnicamente es un pipeline dentro de este pipeline (hace lo mismo en menos lineas, dentro de este pipeline)
+## Vuelvo y hago la Filogenia ambiental ###################################################
+```
+#hago filogenia con la base de datos el comando phylogeny 
 qiime phylogeny align-to-tree-mafft-fasttree \
   --i-sequences salidas/secs_representativas_filtradas.qza \
   --output-dir salidas/filogenia_ambiental_filtrada
@@ -286,18 +247,17 @@ qiime empress community-plot \
     --m-sample-metadata-file metadata.tsv \
     --m-feature-metadata-file salidas/vsearch-taxonomy_SuppMaterial2_filtrada.qza \
     --o-visualization salidas/empress-tree_filtrada.qzv
+```
 
 
-#######################################################################################################################################################################################################################################
-################################### analisis de rarefacción y diversidades alfa_beta #################################
-#la conversión de recuentos a proporciones y la rarefacción de los recuentos son dos formas de tener en cuenta y corregir la profundidad de muestreo desigual de las muestras. Aunque las
-#proporciones son más intuitivas y fáciles de entender, la rarefacción es mas popular a la hora de calcular los índices de diversidad, especialmente para algunos índices de 
-#diversidad que tienen en cuenta el número de especies utilizando la presencia/ausencia en lugar de la abundancia, como los índices de Sørensen y Jaccard. 
-#Cuando los recuentos de las lecturas se enrarecen, algunos recuentos bajos llegan a cero, reduciendo efectivamente el número de especies corrigiendo la profundidad de muestreo desigual en estos índices. 
+## analisis de rarefacción y diversidades alfa_beta 
+la conversión de recuentos a proporciones y la rarefacción de los recuentos son dos formas de tener en cuenta y corregir la profundidad de muestreo desigual de las muestras. Aunque las proporciones son más intuitivas y fáciles de entender, la rarefacción es mas popular a la hora de calcular los índices de diversidad, especialmente para algunos índices de 
+ diversidad que tienen en cuenta el número de especies utilizando la presencia/ausencia en lugar de la abundancia, como los índices de Sørensen y Jaccard. Cuando los recuentos de las lecturas se enrarecen, algunos recuentos bajos llegan a cero, reduciendo efectivamente el número de especies corrigiendo la profundidad de muestreo desigual en estos índices. 
 
 #**************************************************************************************************************************
 ####IMPORTANTE: esto solo se hace en este primer ensayo piloto
 ### En este primer ensayo piloto es necesario hacer una rerefaccion con todas las ASVs para definir cual fue el kit de extraccion que mas diversiadd (ASVs rescato)
+```
 #con el plugin diversity core-metrics, hago la rarefaccion y ademas se calculan todas las medidas de diversidad estandar
 qiime diversity core-metrics-phylogenetic \
 --i-phylogeny salidas/filogenia_ambiental/rooted_tree.qza \
@@ -317,7 +277,7 @@ qiime feature-table summarize \
 qiime tools view salidas/core-metrics-results_KitsE/rarefied_table.qzv 
 
 
-### hago la curva de rerefaccion con todas las ASVs sobre los datos que ahora se encuentran relativizados, para definir cual fue el kit de extraccion que mas diversiadd (ASVs rescato)
+### hago la curva de rerefaccion con todas las ASVs sobre los datos que ahora se encuentran relativizados, para definir cual fue el kit de extraccion que mas diversidad (ASVs rescato)
 qiime diversity alpha-rarefaction \
 --i-table salidas/core-metrics-results_KitsE/rarefied_table.qza \
 --p-max-depth 10000 \
@@ -329,14 +289,16 @@ qiime diversity alpha-rarefaction \
 
 #visualizo
 qiime tools view salidas/alpha_rarefaction_KitsE.qzv
+```
 #Aunque el kit de suelos (Powersoil) haya rescatado mayor numero de secuencias y las asignaciones de peces se hallan dado en una muestra que fue extraida con dicho kit,
 #Se puede ver claramente que el kit de aguas (KM) rescata mayor diversidad en general, una vez que se corrige las disparidades dadas por la profundidad de muestreo desigual de las muestras
+
 ####IMPORTANTE: estas metricas de diversidad estan sobreestimadas ya que tienen en cuenta toda la diversidad rescatada por los primers, lo cual se aleja de nuestro objetivo
 #que es el calcular las metricas de la diverdad de peces, por eso de aqui en adelante se calculan con los datos filtrados
 #**************************************************************************************************************************
 
 
-
+```
 #corro (ejecuto) las métricas de diversidad predeterminadas  : 
 #se debe comparar un numero de secuencias que considere el mismo numero para cada una de las muestras, por ende el valor maximo que puede tener
 #el argumento --p-sampling-depth sera el de la muestra con menos secuencias (features)
